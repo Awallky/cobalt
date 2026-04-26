@@ -3,6 +3,7 @@ package dev.cobalt.shell;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import org.chromium.base.metrics.RecordHistogram;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -99,6 +100,7 @@ public class StartupGuard {
         if (!handler.hasCallbacks(crashRunnable)) {
             handler.postDelayed(crashRunnable, delaySeconds * 1000);
             Log.i(TAG, "StartupGuard scheduled crash in " + delaySeconds + " seconds.");
+            RecordHistogram.recordBooleanHistogram("Cobalt.Startup.StartupGuardEnabled", true);
         } else {
             Log.w(TAG, "StartupGuard fail to schedule crash, because there is already a pending crash scheduled.");
         }
@@ -111,6 +113,7 @@ public class StartupGuard {
         if (handler.hasCallbacks(crashRunnable)) {
             handler.removeCallbacks(crashRunnable);
             Log.i(TAG, "StartupGuard cancelled crash. " + getStartupStatusAndDiagnosisInfo());
+            RecordHistogram.recordBooleanHistogram("Cobalt.Startup.StartupGuardDisarmed", true);
         }
     }
 }
