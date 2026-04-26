@@ -34,6 +34,7 @@ import android.view.Surface;
 import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import org.chromium.base.metrics.RecordHistogram;
 import dev.cobalt.media.MediaCodecFrameRateEstimator.FrameRateEstimator;
 import dev.cobalt.util.Log;
 import dev.cobalt.util.SynchronizedHolder;
@@ -346,6 +347,7 @@ class MediaCodecBridge {
                     TAG,
                     "Ignoring output buffer with invalid timestamp: %d",
                     info.presentationTimeUs);
+                RecordHistogram.recordBooleanHistogram("Cobalt.Media.InvalidOutputTimestamp", true);
                 releaseOutputBuffer(index, false);
                 return;
               }
