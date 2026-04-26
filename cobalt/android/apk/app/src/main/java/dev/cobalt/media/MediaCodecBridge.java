@@ -34,6 +34,7 @@ import android.view.Surface;
 import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import org.chromium.base.metrics.RecordHistogram;
 import dev.cobalt.media.MediaCodecFrameRateEstimator.FrameRateEstimator;
 import dev.cobalt.util.Log;
 import dev.cobalt.util.SynchronizedHolder;
@@ -50,6 +51,16 @@ import org.jni_zero.NativeMethods;
 /** A wrapper of the MediaCodec class. */
 @JNINamespace("starboard")
 class MediaCodecBridge {
+  private static final int CREATION_SUCCESS = 0;
+  private static final int CREATION_INVALID_NAME = 1;
+  private static final int CREATION_FAILED = 2;
+  private static final int CREATION_NULL_CODEC = 3;
+  private static final int CREATION_NULL_INFO = 4;
+  private static final int CREATION_NULL_CAPABILITIES = 5;
+  private static final int CREATION_NULL_VIDEO_CAPABILITIES = 6;
+  private static final int CREATION_CONFIGURE_FAILED = 7;
+  private static final int CREATION_START_FAILED = 8;
+  private static final int CREATION_MAX = 9;
   // TODO: Use MediaFormat constants when part of the public API.
   private static final String KEY_CROP_LEFT = "crop-left";
   private static final String KEY_CROP_RIGHT = "crop-right";
@@ -447,6 +458,7 @@ class MediaCodecBridge {
       String message = "Invalid decoder name.";
       Log.e(TAG, message);
       outCreateMediaCodecBridgeResult.mErrorMessage = message;
+      RecordHistogram.recordEnumeratedHistogram("Cobalt.Media.VideoCodecCreationResult", CREATION_INVALID_NAME, CREATION_MAX);
       return;
     }
 
@@ -464,26 +476,31 @@ class MediaCodecBridge {
       message += ", exception: " + e.toString();
       Log.e(TAG, message);
       outCreateMediaCodecBridgeResult.mErrorMessage = message;
+      RecordHistogram.recordEnumeratedHistogram("Cobalt.Media.VideoCodecCreationResult", CREATION_FAILED, CREATION_MAX);
       return;
     }
     if (mediaCodec == null) {
       outCreateMediaCodecBridgeResult.mErrorMessage = "mediaCodec is null";
+      RecordHistogram.recordEnumeratedHistogram("Cobalt.Media.VideoCodecCreationResult", CREATION_NULL_CODEC, CREATION_MAX);
       return;
     }
 
     MediaCodecInfo codecInfo = mediaCodec.getCodecInfo();
     if (codecInfo == null) {
       outCreateMediaCodecBridgeResult.mErrorMessage = "codecInfo is null";
+      RecordHistogram.recordEnumeratedHistogram("Cobalt.Media.VideoCodecCreationResult", CREATION_NULL_INFO, CREATION_MAX);
       return;
     }
     CodecCapabilities codecCapabilities = codecInfo.getCapabilitiesForType(mime);
     if (codecCapabilities == null) {
       outCreateMediaCodecBridgeResult.mErrorMessage = "codecCapabilities is null";
+      RecordHistogram.recordEnumeratedHistogram("Cobalt.Media.VideoCodecCreationResult", CREATION_NULL_CAPABILITIES, CREATION_MAX);
       return;
     }
     VideoCapabilities videoCapabilities = codecCapabilities.getVideoCapabilities();
     if (videoCapabilities == null) {
       outCreateMediaCodecBridgeResult.mErrorMessage = "videoCapabilities is null";
+      RecordHistogram.recordEnumeratedHistogram("Cobalt.Media.VideoCodecCreationResult", CREATION_NULL_VIDEO_CAPABILITIES, CREATION_MAX);
       return;
     }
 
@@ -621,15 +638,18 @@ class MediaCodecBridge {
       Log.e(TAG, "Failed to configure video codec.");
       bridge.release();
       // outCreateMediaCodecBridgeResult.mErrorMessage is set inside configureVideo() on error.
+      RecordHistogram.recordEnumeratedHistogram("Cobalt.Media.VideoCodecCreationResult", CREATION_CONFIGURE_FAILED, CREATION_MAX);
       return;
     }
     if (!bridge.start(outCreateMediaCodecBridgeResult)) {
       Log.e(TAG, "Failed to start video codec.");
       bridge.release();
       // outCreateMediaCodecBridgeResult.mErrorMessage is set inside start() on error.
+      RecordHistogram.recordEnumeratedHistogram("Cobalt.Media.VideoCodecCreationResult", CREATION_START_FAILED, CREATION_MAX);
       return;
     }
 
+    RecordHistogram.recordEnumeratedHistogram("Cobalt.Media.VideoCodecCreationResult", CREATION_SUCCESS, CREATION_MAX);
     outCreateMediaCodecBridgeResult.mMediaCodecBridge = bridge;
   }
 

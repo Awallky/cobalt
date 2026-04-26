@@ -88,6 +88,18 @@ https://chromium.googlesource.com/chromium/src.git/+/HEAD/tools/metrics/histogra
   <int value="4" label="Unknown"/>
 </enum>
 
+<enum name="VideoCodecCreationResult">
+  <int value="0" label="Success"/>
+  <int value="1" label="Invalid Name"/>
+  <int value="2" label="Create Failed"/>
+  <int value="3" label="Null CodeC"/>
+  <int value="4" label="Null Info"/>
+  <int value="5" label="Null Capabilities"/>
+  <int value="6" label="Null Video Capabilities"/>
+  <int value="7" label="Configure Failed"/>
+  <int value="8" label="Start Failed"/>
+</enum>
+
 </enums>
 
 </histogram-configuration>
