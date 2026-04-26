@@ -63,6 +63,10 @@ https://chromium.googlesource.com/chromium/src.git/+/HEAD/tools/metrics/histogra
   <int value="4" label="Timeout"/>
 </enum>
 
+<enum name="PlatformErrorType">
+  <int value="0" label="Connection Error"/>
+</enum>
+
 <enum name="SentinelWriteResult">
   <int value="0" label="Success"/>
   <int value="1" label="Empty Path"/>

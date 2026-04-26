@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import org.chromium.content_public.browser.WebContents;
+import org.chromium.base.metrics.RecordHistogram;
 import org.jni_zero.CalledByNative;
 import org.jni_zero.JNINamespace;
 import org.jni_zero.NativeMethods;
@@ -301,6 +302,7 @@ public class StarboardBridge {
   @CalledByNative
   void raisePlatformError(@PlatformError.ErrorType int errorType, long data) {
     StartupGuard.getInstance().setStartupMilestone(37);
+    RecordHistogram.recordEnumeratedHistogram("Cobalt.Android.PlatformErrorType", errorType, 1);
     mPlatformError = new PlatformError(mActivityHolder, errorType, data);
     mPlatformError.raise();
   }
