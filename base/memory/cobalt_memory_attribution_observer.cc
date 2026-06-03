@@ -61,25 +61,6 @@ void CobaltMemoryAttributionObserver::OnAllocation(
   g_in_allocation_hook = true;
 
   MemoryContext current_context = GetCurrentMemoryContext();
-  if (current_context == MemoryContext::kUnknown) {
-    const char* thread_name = GetCurrentOSThreadName();
-    if (thread_name) {
-      if (strstr(thread_name, "V8") || strstr(thread_name, "GC") ||
-          strstr(thread_name, "Compiler") || strstr(thread_name, "wasm")) {
-        current_context = MemoryContext::kScript;
-      } else if (strstr(thread_name, "Skia") || strstr(thread_name, "Compositor") ||
-                 strstr(thread_name, "Raster")) {
-        current_context = MemoryContext::kGraphics;
-      } else if (strstr(thread_name, "Network") || strstr(thread_name, "URL") ||
-                 strstr(thread_name, "CrNetwork")) {
-        current_context = MemoryContext::kNetwork;
-      } else if (strstr(thread_name, "Media") || strstr(thread_name, "Audio") ||
-                 strstr(thread_name, "Video") || strstr(thread_name, "Decoder") ||
-                 strstr(thread_name, "player_worker")) {
-        current_context = MemoryContext::kMedia;
-      }
-    }
-  }
   if (current_context >= MemoryContext::kCount) {
     current_context = MemoryContext::kUnknown;
   }
