@@ -187,7 +187,7 @@ int HttpCache::Transaction::Start(const HttpRequestInfo* request,
 
 #if BUILDFLAG(IS_COBALT)
   base::memory::ScopedMemoryContext scoped_context(
-      base::memory::MemoryContext::kNetwork);
+      base::memory::MemoryContext::kNetworkCache);
 #endif
 
   TRACE_EVENT_BEGIN(TRACE_DISABLED_BY_DEFAULT("net"),
@@ -815,7 +815,7 @@ void HttpCache::Transaction::AddDiskCacheWriteTime(base::TimeDelta elapsed) {
 //   CacheReadResponse* and CacheDispatchValidation.
 int HttpCache::Transaction::DoLoop(int result) {
 #if BUILDFLAG(IS_COBALT)
-  base::memory::ScopedMemoryContext scoped_context(base::memory::MemoryContext::kNetwork);
+  base::memory::ScopedMemoryContext scoped_context(base::memory::MemoryContext::kNetworkCache);
 #endif
   DCHECK_NE(STATE_UNSET, next_state_);
   DCHECK_NE(STATE_NONE, next_state_);
@@ -3949,7 +3949,7 @@ void HttpCache::Transaction::SaveNetworkTransactionInfo(
 
 void HttpCache::Transaction::OnIOComplete(int result) {
 #if BUILDFLAG(IS_COBALT)
-  base::memory::ScopedMemoryContext scoped_context(base::memory::MemoryContext::kNetwork);
+  base::memory::ScopedMemoryContext scoped_context(base::memory::MemoryContext::kNetworkCache);
 #endif
   if (waiting_for_cache_io_) {
     CHECK_NE(result, ERR_CACHE_RACE);
@@ -3963,7 +3963,7 @@ void HttpCache::Transaction::OnIOComplete(int result) {
 
 void HttpCache::Transaction::OnCacheIOComplete(int result) {
 #if BUILDFLAG(IS_COBALT)
-  base::memory::ScopedMemoryContext scoped_context(base::memory::MemoryContext::kNetwork);
+  base::memory::ScopedMemoryContext scoped_context(base::memory::MemoryContext::kNetworkCache);
 #endif
   if (waiting_for_cache_io_) {
     // Handle the case of parallel HttpCache transactions being run against
