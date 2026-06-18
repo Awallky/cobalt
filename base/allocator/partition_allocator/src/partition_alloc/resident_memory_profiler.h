@@ -51,6 +51,8 @@ PA_COMPONENT_EXPORT(PARTITION_ALLOC) void OnFreeSampled(void* address);
 
 // Returns the total sampled resident memory in bytes.
 PA_COMPONENT_EXPORT(PARTITION_ALLOC) size_t GetTotalSampledResidentMemory();
+PA_COMPONENT_EXPORT(PARTITION_ALLOC) size_t GetSampledResidentMemoryForContext(uint8_t context_id);
+
 
 }  // namespace partition_alloc
 

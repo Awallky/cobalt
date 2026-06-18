@@ -18,8 +18,10 @@
 #include <string_view>
 #include <utility>
 
+#include "base/allocator/partition_allocator/src/partition_alloc/resident_memory_profiler.h"
 #include "base/functional/bind.h"
 #include "base/logging.h"
+#include "base/memory/cobalt_memory_context.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/strings/strcat.h"
@@ -513,6 +515,24 @@ void CobaltMemoryMetricsEmitter::CollateResults() {
 #endif
   }
 
+#if BUILDFLAG(IS_COBALT) && PA_BUILDFLAG(ENABLE_BACKUP_REF_PTR_SUPPORT)
+  if (partition_alloc::IsMemoryProfilerSamplingEnabled()) {
+    for (uint8_t i = 1;
+         i < static_cast<uint8_t>(base::memory::MemoryContext::kCount); ++i) {
+      size_t memory_bytes =
+          partition_alloc::GetSampledResidentMemoryForContext(i);
+      if (memory_bytes > 0) {
+        std::string context_name(base::memory::ContextToString(
+            static_cast<base::memory::MemoryContext>(i)));
+        std::string uma_name =
+            "Cobalt.Memory.Profiler.Resident." + context_name;
+        // The memory verification rig expects KB, so we emit in KB
+        base::UmaHistogramMemoryKB(uma_name,
+                                   static_cast<int>(memory_bytes / 1024));
+      }
+    }
+  }
+#endif
   base::UmaHistogramMemoryLargeMB(
       "Memory.Total.ResidentSet",
       static_cast<int>(resident_set_total_kb / kKiB));

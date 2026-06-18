@@ -20,6 +20,7 @@
 
 #include <atomic>
 #include <random>
+#include "base/memory/cobalt_memory_context.h" // nogncheck
 
 #include "base/allocator/partition_allocator/src/partition_alloc/in_slot_metadata.h"
 #include "base/allocator/partition_allocator/src/partition_alloc/partition_root.h"
@@ -34,6 +35,7 @@ namespace {
 struct SampledMetadata {
   size_t allocation_size;
   double resident_weight;
+  uint8_t context_id;
   // Stack trace could be added here later if requested.
 };
 
@@ -49,6 +51,7 @@ SampledAllocationsMap* g_sampled_allocations[kNumShards] = {};
 internal::Lock g_shard_locks[kNumShards];
 
 std::atomic<size_t> resident_counters_[kNumShards] = {};
+std::atomic<size_t> resident_counters_by_context_[static_cast<uint8_t>(base::memory::MemoryContext::kCount)] = {};
 
 inline size_t GetShard(void* address) {
   return (reinterpret_cast<uintptr_t>(address) >> 4) % kNumShards;
@@ -101,8 +104,10 @@ PA_COMPONENT_EXPORT(PARTITION_ALLOC) void SampleAllocation(void* address, size_t
     if (!g_sampled_allocations[shard]) {
       g_sampled_allocations[shard] = internal::ConstructAtInternalPartition<SampledAllocationsMap>();
     }
-    (*g_sampled_allocations[shard])[address] = {size, weight};
+    uint8_t context_id = static_cast<uint8_t>(base::memory::GetCurrentMemoryContext());
+    (*g_sampled_allocations[shard])[address] = {size, weight, context_id};
     resident_counters_[shard].fetch_add(size, std::memory_order_relaxed);
+    resident_counters_by_context_[context_id].fetch_add(size, std::memory_order_relaxed);
   }
 
   auto* metadata = PartitionRoot::InSlotMetadataPointerFromSlotStartAndSize(
@@ -121,12 +126,14 @@ PA_COMPONENT_EXPORT(PARTITION_ALLOC) void OnFreeSampled(void* address) {
 
   size_t shard = GetShard(address);
   size_t size = 0;
+  uint8_t context_id = 0;
   {
     internal::ScopedGuard lock(g_shard_locks[shard]);
     if (g_sampled_allocations[shard]) {
       auto it = g_sampled_allocations[shard]->find(address);
       if (it != g_sampled_allocations[shard]->end()) {
         size = it->second.allocation_size;
+        context_id = it->second.context_id;
         g_sampled_allocations[shard]->erase(it);
       }
     }
@@ -134,6 +141,7 @@ PA_COMPONENT_EXPORT(PARTITION_ALLOC) void OnFreeSampled(void* address) {
 
   if (size > 0) {
     resident_counters_[shard].fetch_sub(size, std::memory_order_relaxed);
+    resident_counters_by_context_[context_id].fetch_sub(size, std::memory_order_relaxed);
   }
 }
 PA_COMPONENT_EXPORT(PARTITION_ALLOC) size_t GetTotalSampledResidentMemory() {
@@ -144,6 +152,15 @@ PA_COMPONENT_EXPORT(PARTITION_ALLOC) size_t GetTotalSampledResidentMemory() {
   return total;
 }
 
+
+PA_COMPONENT_EXPORT(PARTITION_ALLOC) size_t GetSampledResidentMemoryForContext(uint8_t context_id) {
+  if (context_id >= static_cast<uint8_t>(base::memory::MemoryContext::kCount)) {
+    return 0;
+  }
+  return resident_counters_by_context_[context_id].load(std::memory_order_relaxed);
+}
+
 }  // namespace partition_alloc
+
 
 #endif  // BUILDFLAG(IS_COBALT) && PA_BUILDFLAG(ENABLE_BACKUP_REF_PTR_SUPPORT)
