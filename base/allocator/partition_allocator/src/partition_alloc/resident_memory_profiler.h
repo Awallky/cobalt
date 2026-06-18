@@ -35,6 +35,8 @@ PA_COMPONENT_EXPORT(PARTITION_ALLOC) extern std::atomic<double> g_memory_profile
 
 struct PA_COMPONENT_EXPORT(PARTITION_ALLOC) ThreadLocalData {
   int64_t bytes_until_next_sample = 0;
+  bool is_sampling = false;
+  uint32_t prng_state = 0;
 };
 
 // Returns whether the profiler is enabled.
